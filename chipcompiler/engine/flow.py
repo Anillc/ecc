@@ -5,12 +5,9 @@ import os
 import time
 import logging
 import traceback
-from multiprocessing import Process
-from threading import Thread
 
 from chipcompiler.data import Workspace, WorkspaceStep, StateEnum, StepEnum, log_flow
 from chipcompiler.engine import EngineDB
-from chipcompiler.utility import track_process_memory
 from chipcompiler.utility.log import redirect_stdio_to_file
 
 logger = logging.getLogger(__name__)
@@ -37,6 +34,22 @@ def _run_step_in_subprocess(workspace: Workspace, workspace_step: WorkspaceStep)
         from chipcompiler.tools import run_step as run_tool_step
         result = run_tool_step(workspace=workspace, step=workspace_step)
         workspace.logger.info(f"[STEP] {step_tag} finished result={result}")
+    except Exception:
+        workspace.logger.error(f"[STEP] {step_tag} failed with exception")
+        traceback.print_exc()
+
+
+def _run_step_inline(workspace: Workspace, workspace_step: WorkspaceStep) -> None:
+    """
+    Execute a step in the current process so pdb/debugpy can attach normally.
+    """
+    step_tag = f"{workspace_step.name}({workspace_step.tool})"
+    workspace.logger.info(f"[STEP] {step_tag} started inline pid={os.getpid()}")
+
+    try:
+        from chipcompiler.tools import run_step as run_tool_step
+        result = run_tool_step(workspace=workspace, step=workspace_step)
+        workspace.logger.info(f"[STEP] {step_tag} finished inline result={result}")
     except Exception:
         workspace.logger.error(f"[STEP] {step_tag} failed with exception")
         traceback.print_exc()
@@ -324,26 +337,9 @@ class EngineFlow:
                        tool=workspace_step.tool,
                        state=StateEnum.Ongoing)
 
-        # run step in a subprocess
-        p = Process(target=_run_step_in_subprocess,
-                    args=(self.workspace, workspace_step))
-        p.start()
-        step_log_file = workspace_step.log.get("file", "")
-        logger.info("[DISPATCH] %s pid=%s log=%s", step_tag, p.pid,
-                    os.path.abspath(step_log_file) if step_log_file else "N/A")
-
-        # track peak memory in a background thread
-        peak_memory_result = [0]
-        def _track_memory():
-            peak_memory_result[0] = track_process_memory(p.pid)
-        tracker = Thread(target=_track_memory, daemon=True)
-        tracker.start()
-
-        p.join()
-        tracker.join(timeout=1.0)
-
         # compute metrics
-        peak_memory_mb = round(peak_memory_result[0] / 1024.0, 3)
+        _run_step_inline(self.workspace, workspace_step)
+        peak_memory_mb = 0
         elapsed = time.time() - start_time
         runtime = f"{int(elapsed // 3600)}:{int((elapsed % 3600) // 60)}:{int(elapsed % 60)}"
 
@@ -357,7 +353,7 @@ class EngineFlow:
                        runtime=runtime,
                        peak_memory=peak_memory_mb)
         self.workspace.logger.info("[RESULT] %s state=%s runtime=%s mem=%sMB exitcode=%s",
-                    step_tag, state.value, runtime, peak_memory_mb, p.exitcode)
+                    step_tag, state.value, runtime, peak_memory_mb, 0)
 
         # save layout snapshot on success
         if state == StateEnum.Success:
