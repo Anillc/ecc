@@ -207,6 +207,11 @@ class EngineFlow:
                 if os.path.exists(workspace_step.output.get("lef", "")) and \
                     os.path.exists(workspace_step.output.get("lib", "")):
                     success = True
+            case StepEnum.RCX.value:
+                for spef in workspace_step.output.get("spef", []):
+                    if not os.path.exists(spef):
+                        break
+                success = True
             case default:
                 if os.path.exists(workspace_step.output.get("def", "")) and \
                     os.path.exists(workspace_step.output.get("verilog", "")) and \

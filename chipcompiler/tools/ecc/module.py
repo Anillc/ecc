@@ -9,7 +9,7 @@ class ECCToolsModule:
     """
     def __init__(self):
         try:
-            from ecc_tools_bin import ecc_py as ecc
+            from chipcompiler.tools.ecc.bin import ecc_py as ecc
         except ImportError:
             try:
                 from chipcompiler.tools.ecc.bin import ecc_py as ecc
@@ -622,6 +622,121 @@ class ECCToolsModule:
                 if json_data is not None and json_data.get("RT", {}).get("-enable_timing", "0") == "1":
                     return True
         return False
+
+    ########################################################################
+    # RCX api
+    ########################################################################
+    def run_rcx(self, config: str):
+        return self.ecc.run_rcx(config=config)
+
+    def report_rcx(self, output_dir: str = "."):
+        return self.ecc.report_rcx(output_dir)
+    
+    def rcx_json_to_itf(self, json_path: str, itf_path: str):
+        import json
+        import math
+        import re
+        from pathlib import Path
+        from typing import Any
+        SAFE_TOKEN_RE = re.compile(r"^[^\s{}=#]+$")
+        
+        def quote_token(value: str) -> str:
+            if SAFE_TOKEN_RE.match(value) and not value.startswith("//"):
+                return value
+            return json.dumps(value)
+        
+        
+        def format_value(entry: dict[str, Any]) -> str:
+            if "value" not in entry:
+                raise ValueError("missing ITF token value")
+            value = entry.get("value")
+            if isinstance(value, str):
+                return quote_token(value)
+            if isinstance(value, bool):
+                return "1" if value else "0"
+            if isinstance(value, int):
+                return str(value)
+            if isinstance(value, float):
+                if not math.isfinite(value):
+                    raise ValueError(f"non-finite float is not valid ITF value: {value!r}")
+                return format(value, ".15g")
+            if value is None:
+                raise ValueError("null is not a valid ITF scalar value")
+            return quote_token(str(value))
+        
+        
+        def statement_kind(statement: dict[str, Any], index: int) -> str:
+            has_properties = "properties" in statement
+            has_type = "type" in statement
+            has_name = "name" in statement
+            has_key = "key" in statement
+            has_value = "value" in statement
+        
+            if has_properties or has_type or has_name:
+                if not (has_properties and has_type and has_name):
+                    raise ValueError(f"statement {index}: block must have type, name, and properties")
+                return "block"
+            if has_key or has_value:
+                if not (has_key and has_value):
+                    raise ValueError(f"statement {index}: assignment must have key and value")
+                return "assignment"
+            raise ValueError(f"statement {index}: cannot infer statement type")
+        
+        
+        def json_to_itf(statements: Any) -> str:
+            if not isinstance(statements, list):
+                raise ValueError("invalid top-level JSON schema; expected a statement array")
+            block_statements = [
+                item
+                for index, item in enumerate(statements)
+                if isinstance(item, dict) and statement_kind(item, index) == "block"
+            ]
+            type_width = max([len(str(item.get("type", ""))) for item in block_statements] + [0])
+            name_width = max([len(str(item.get("name", ""))) for item in block_statements] + [0])
+        
+            lines: list[str] = []
+            for index, statement in enumerate(statements):
+                if not isinstance(statement, dict):
+                    raise ValueError(f"statement {index}: must be an object")
+                kind = statement_kind(statement, index)
+        
+                if kind == "assignment":
+                    key = statement.get("key")
+                    if not key:
+                        raise ValueError(f"statement {index}: assignment missing key")
+                    value = format_value(statement)
+                    lines.append(f"{key} = {value}")
+                    continue
+        
+                block_type = statement.get("type")
+                name = statement.get("name")
+                properties = statement.get("properties")
+                if not block_type or not name:
+                    raise ValueError(f"statement {index}: block missing type or name")
+                if not isinstance(properties, list):
+                    raise ValueError(f"statement {index}: block properties must be a list")
+        
+                prop_parts: list[str] = []
+                for prop_index, prop in enumerate(properties):
+                    if not isinstance(prop, dict):
+                        raise ValueError(f"statement {index} property {prop_index}: must be an object")
+                    key = prop.get("key")
+                    if not key:
+                        raise ValueError(f"statement {index} property {prop_index}: missing key")
+                    prop_parts.append(f"{key} = {format_value(prop)}")
+        
+                line = (
+                    f"{str(block_type):<{type_width}} "
+                    f"{str(name):<{name_width}} {{ {'  '.join(prop_parts)} }}"
+                )
+                lines.append(line.rstrip())
+        
+            return "\n".join(lines) + "\n"    
+            
+        from chipcompiler.utility import json_read
+        data = json_read(json_path)
+        output = json_to_itf(data)
+        Path(itf_path).write_text(output)
     
     ########################################################################
     # STA api

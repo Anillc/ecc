@@ -177,6 +177,11 @@ def run_step(workspace: Workspace,
             state = run_harden(workspace=workspace,
                                step=step, 
                                ecc_module=ecc_module)
+            
+        case StepEnum.RCX.value:
+            state = run_rcx(workspace=workspace,
+                            step=step, 
+                            ecc_module=ecc_module)
                 
     return state
 
@@ -429,6 +434,9 @@ def run_drc(workspace: Workspace,
                              state=StateEnum.Success) 
         
         run_analysis(workspace = workspace, step = step, subflow = sub_flow)
+        
+        sub_flow.update_step(step_name=EccSubFlowEnum.save_data.value,
+                             state=StateEnum.Success) 
     
     return reslut
 
@@ -500,7 +508,7 @@ def run_floorplan(workspace: Workspace,
     """
     run floorplan
     """
-    
+    reslut = False
     sub_flow = EccSubFlow(workspace=workspace,
                           workspace_step=step)
     
@@ -645,10 +653,8 @@ def run_floorplan(workspace: Workspace,
                              state=StateEnum.Success) 
         
         run_analysis(workspace = workspace, step = step, subflow = sub_flow)
-        
-        return reslut
     
-    return False 
+    return reslut 
 
 def run_harden(workspace: Workspace,
                step: WorkspaceStep,
@@ -682,3 +688,50 @@ def run_harden(workspace: Workspace,
         reslut = True
     
     return reslut
+
+def run_rcx(workspace: Workspace,
+            step: WorkspaceStep,
+            ecc_module : ECCToolsModule = None) -> bool:
+    """
+    run rcx
+    """
+    def run_jsons_to_itf(eda_inst : ECCToolsModule) -> bool:
+        config=json_read(step.config.get(StepEnum.RCX.value, ""))
+        corners_dict = config.get("corners", [])
+        for item in corners_dict:
+            json_file = item.get("ecc_tf", "")
+            itf_file = item.get("itf_file", "")
+
+            if not os.path.exists(json_file):
+                return False
+            
+            eda_inst.rcx_json_to_itf(json_path=json_file, itf_path=itf_file)
+        return True
+    
+    result = False
+    
+    sub_flow = EccSubFlow(workspace=workspace,
+                          workspace_step=step)
+    
+    eda_inst = get_eda_instance(workspace=workspace,
+                                step=step,
+                                ecc_module = ecc_module)
+    
+    if eda_inst is not None:
+        sub_flow.update_step(step_name=EccSubFlowEnum.load_data.value, state=StateEnum.Success)
+        if not run_jsons_to_itf(eda_inst):
+            sub_flow.update_step(step_name=EccSubFlowEnum.run_rcx.value, state=StateEnum.Imcomplete)
+            result = False
+        else:
+            eda_inst.run_rcx(config=step.config.get(StepEnum.RCX.value, ""))
+            eda_inst.report_rcx(step.output.get("dir", ""))
+            sub_flow.update_step(step_name=EccSubFlowEnum.run_rcx.value, state=StateEnum.Success)
+            
+            save_data(workspace=workspace, step=step, ecc_module=eda_inst, feature_step=False)
+            
+            sub_flow.update_step(step_name=EccSubFlowEnum.save_data.value,
+                                 state=StateEnum.Success) 
+        
+            result = True
+        
+    return result
