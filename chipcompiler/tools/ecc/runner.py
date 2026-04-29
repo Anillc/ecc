@@ -279,7 +279,8 @@ def run_cts(workspace: Workspace,
         
         eda_inst.report_cts(output=step.data[f"{StepEnum.CTS.value}"])
         
-        eda_inst.run_legalize(config=step.config[f"{StepEnum.LEGALIZATION.value}"])
+        # Post-CTS legalization is handled by the following DreamPlace legalization step.
+        # eda_inst.run_legalize(config=step.config[f"{StepEnum.LEGALIZATION.value}"])
         
         eda_inst.feature_cts_map(json_path=step.feature["map"])
         
