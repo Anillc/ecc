@@ -12,34 +12,61 @@ from chipcompiler.tools.ecc.subflow import EccSubFlow, EccSubFlowEnum
 from chipcompiler.tools.ecc.checklist import EccChecklist
 from chipcompiler.utility import json_read
 
+
 def create_db_engine(workspace: Workspace,
                      step: WorkspaceStep) -> ECCToolsModule:
     """"""
-    if not is_eda_exist():
-        return False
-    eda_inst = ECCToolsModule()
+    def load_data():
+        eda_inst = ECCToolsModule()
+        
+        eda_inst.init_config(flow_config=step.config["flow"],
+                             db_config=step.config["db"],
+                             output_dir=step.data["dir"],
+                             feature_dir=step.feature["dir"])
     
-    eda_inst.init_config(flow_config=step.config["flow"],
-                         db_config=step.config["db"],
-                         output_dir=step.data["dir"],
-                         feature_dir=step.feature["dir"])
-    
-    eda_inst.init_techlef(workspace.pdk.tech)
-    eda_inst.init_lefs(workspace.pdk.lefs)
-    
-    # if db def exist, read db def
-    if os.path.exists(step.input["def"]):
-        eda_inst.read_def(step.input["def"])      
-    else:
-        #else, read step output verilog
-        if os.path.exists(step.input["verilog"]):
-            eda_inst.read_verilog(verilog=step.input["verilog"],
-                                  top_module=workspace.design.top_module)
+        db_path = step.input.get("db", "")
+        if eda_inst.is_db_data_exists(db_path):
+            eda_inst.load_data(path=db_path)
+            workspace.logger.info(f"Successfully loaded data from {db_path}")
+            return eda_inst
         else:
             return None
+        
+    def load_design():
+        eda_inst = ECCToolsModule()
     
-    return eda_inst
+        eda_inst.init_config(flow_config=step.config["flow"],
+                             db_config=step.config["db"],
+                             output_dir=step.data["dir"],
+                             feature_dir=step.feature["dir"])
 
+        eda_inst.init_techlef(workspace.pdk.tech)
+        eda_inst.init_lefs(workspace.pdk.lefs)
+        
+        # if db def exist, read db def
+        if os.path.exists(step.input["def"]):
+            eda_inst.read_def(step.input["def"])      
+        else:
+            #else, read step output verilog
+            if os.path.exists(step.input["verilog"]):
+                eda_inst.read_verilog(verilog=step.input["verilog"],
+                                      top_module=workspace.design.top_module)
+            else:
+                return None
+    
+        return eda_inst
+    
+    if not is_eda_exist():
+        return None
+    try:
+        eda_inst = load_data()
+        if eda_inst is None:
+            eda_inst = load_design()
+    except Exception as e:
+        eda_inst = load_design()
+        
+    return eda_inst
+        
 def get_eda_instance(workspace: Workspace,
                      step: WorkspaceStep,
                      ecc_module: ECCToolsModule=None) -> ECCToolsModule:
@@ -73,8 +100,9 @@ def save_data(workspace: Workspace,
     ecc_module.def_save(def_path=step.output.get("def", ""))
     ecc_module.verilog_save(output_verilog=step.output.get("verilog", ""))
     ecc_module.gds_save(output_path=step.output.get("gds", ""))
+    # ecc_module.save_data(path=step.output.get("db", ""))
     ecc_module.json_save(path=step.output.get("json", ""))
-    ecc_module.feature_sammry(json_path=step.feature.get("summary", ""))
+    ecc_module.feature_sammry(json_path=step.feature.get("db", ""))
     if feature_step:
         ecc_module.feature_step(step=step.name,
                             json_path=step.feature.get("step", ""))

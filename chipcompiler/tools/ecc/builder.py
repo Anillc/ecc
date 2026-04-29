@@ -8,6 +8,7 @@ def build_step(workspace: Workspace,
                step_name: str,
                input_def : str,
                input_verilog : str,
+               input_db : str | None = None,
                output_def : str | None = None,
                output_verilog : str | None = None,
                output_gds : str | None = None,
@@ -47,7 +48,8 @@ def build_step(workspace: Workspace,
     # build input paths
     step.input = {
         "def": input_def,
-        "verilog": input_verilog
+        "verilog": input_verilog,
+        "db": input_db
     }  
     
     # build output paths
@@ -57,6 +59,7 @@ def build_step(workspace: Workspace,
         output_verilog = f"{step.directory}/output/{workspace.design.name}_{step.name}.v"
     if output_gds is None:
         output_gds = f"{step.directory}/output/{workspace.design.name}_{step.name}.gds"
+    output_db = f"{step.directory}/output/{workspace.design.name}_{step.name}_db"
     output_image = f"{step.directory}/output/{workspace.design.name}_{step.name}.png"
     output_json = f"{step.directory}/output/{workspace.design.name}_{step.name}.json"
     output_lef = f"{step.directory}/output/{workspace.design.name}_{step.name}.lef"
@@ -67,6 +70,7 @@ def build_step(workspace: Workspace,
         "def": output_def,
         "verilog": output_verilog,
         "gds": output_gds,
+        "db": output_db,
         "image": output_image,
         "json" : output_json,
         "lef" : output_lef,

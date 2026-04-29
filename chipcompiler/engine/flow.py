@@ -229,18 +229,21 @@ class EngineFlow:
                 # use the origin def and verilog in workspace for the first step.
                 input_def = self.workspace.design.origin_def
                 input_verilog = self.workspace.design.origin_verilog
+                input_db = None
             else:
                 # use the output def and verilog from last step.
-                input_def = pre_step.output["def"]
-                input_verilog = pre_step.output["verilog"]
-                
+                input_def = pre_step.output.get("def", "")
+                input_verilog = pre_step.output.get("verilog", "")
+                input_db = pre_step.output.get("db", "")
+
             from chipcompiler.tools import create_step, run_step
             # create workspace step
             eda_step = create_step(workspace=self.workspace,
                                    step=step["name"],
                                    eda=step["tool"],
                                    input_def=input_def,
-                                   input_verilog=input_verilog)
+                                   input_verilog=input_verilog,
+                                   input_db=input_db)
             # save workspace step
             if eda_step is not None:
                 self.workspace_steps.append(eda_step)
