@@ -62,8 +62,8 @@ class ECCToolsModule:
     def build_macro_connection_map(self, max_hop: int):
         return self.ecc.build_macro_connection_map(max_hop)
 
-    def build_connection_map(self, *args, **kwargs):
-        return self.ecc.build_connection_map(*args, **kwargs)
+    def build_connection_map(self, clusters, src_instances, max_hop: int):
+        return self.ecc.build_connection_map(clusters, src_instances, max_hop)
     
     ########################################################################
     # config api
@@ -87,8 +87,8 @@ class ECCToolsModule:
     ########################################################################
     # data api
     ########################################################################
-    def idb_init(self, *args, **kwargs):
-        return self.ecc.idb_init(*args, **kwargs)
+    def idb_init(self, config_path: str):
+        return self.ecc.idb_init(config_path)
 
     def set_net(self, 
                 net_name: str, 
@@ -98,26 +98,52 @@ class ECCToolsModule:
         """
         return self.ecc.set_net(net_name=net_name, net_type=net_type)
     
-    def remove_except_pg_net(self, *args, **kwargs):
-        return self.ecc.remove_except_pg_net(*args, **kwargs)
+    def remove_except_pg_net(self):
+        return self.ecc.remove_except_pg_net()
 
-    def clear_blockage(self, *args, **kwargs):
-        return self.ecc.clear_blockage(*args, **kwargs)
+    def clear_blockage(self, type: str):
+        return self.ecc.clear_blockage(type=type)
 
-    def idb_get(self, *args, **kwargs):
-        return self.ecc.idb_get(*args, **kwargs)
+    def idb_get(
+        self,
+        inst_name: str = "",
+        net_name: str = "",
+        file_name: str = "",
+    ):
+        return self.ecc.idb_get(
+            inst_name=inst_name,
+            net_name=net_name,
+            file_name=file_name,
+        )
 
-    def delete_inst(self, *args, **kwargs):
-        return self.ecc.delete_inst(*args, **kwargs)
+    def delete_inst(self, inst_name: str):
+        return self.ecc.delete_inst(inst_name=inst_name)
 
-    def delete_net(self, *args, **kwargs):
-        return self.ecc.delete_net(*args, **kwargs)
+    def delete_net(self, net_name: str):
+        return self.ecc.delete_net(net_name=net_name)
 
-    def create_inst(self, *args, **kwargs):
-        return self.ecc.create_inst(*args, **kwargs)
+    def create_inst(
+        self,
+        inst_name: str,
+        cell_master: str,
+        coord_x: int = 0,
+        coord_y: int = 0,
+        orient: str = "",
+        type: str = "",
+        status: str = "",
+    ):
+        return self.ecc.create_inst(
+            inst_name=inst_name,
+            cell_master=cell_master,
+            coord_x=coord_x,
+            coord_y=coord_y,
+            orient=orient,
+            type=type,
+            status=status,
+        )
 
-    def create_net(self, *args, **kwargs):
-        return self.ecc.create_net(*args, **kwargs)
+    def create_net(self, net_name: str, conn_type: str = ""):
+        return self.ecc.create_net(net_name=net_name, conn_type=conn_type)
 
     def set_exclude_cell_names(self, cell_names: set):
         self.cell_names = cell_names
@@ -242,26 +268,30 @@ class ECCToolsModule:
         """
         self.ecc.feature_tool(json_path, step)
 
-    def feature_eval_map(self, *args, **kwargs):
-        return self.ecc.feature_eval_map(*args, **kwargs)
+    def feature_eval_map(self, path: str, bin_cnt_x: int, bin_cnt_y: int):
+        return self.ecc.feature_eval_map(
+            path=path,
+            bin_cnt_x=bin_cnt_x,
+            bin_cnt_y=bin_cnt_y,
+        )
 
-    def feature_eval_summary(self, *args, **kwargs):
-        return self.ecc.feature_eval_summary(*args, **kwargs)
+    def feature_eval_summary(self, path: str, grid_size: int):
+        return self.ecc.feature_eval_summary(path=path, grid_size=grid_size)
 
-    def feature_timing_eval_summary(self, *args, **kwargs):
-        return self.ecc.feature_timing_eval_summary(*args, **kwargs)
+    def feature_timing_eval_summary(self, path: str):
+        return self.ecc.feature_timing_eval_summary(path=path)
 
-    def feature_net_eval(self, *args, **kwargs):
-        return self.ecc.feature_net_eval(*args, **kwargs)
+    def feature_net_eval(self, path: str):
+        return self.ecc.feature_net_eval(path=path)
 
-    def feature_cong_map(self, *args, **kwargs):
-        return self.ecc.feature_cong_map(*args, **kwargs)
+    def feature_cong_map(self, step: str, dir: str):
+        return self.ecc.feature_cong_map(step=step, dir=dir)
         
     ########################################################################
     # reports api
     ########################################################################
-    def report_wirelength(self, *args, **kwargs):
-        return self.ecc.report_wirelength(*args, **kwargs)
+    def report_wirelength(self, path: str = ""):
+        return self.ecc.report_wirelength(path=path)
 
     def report_summary(self, 
                        path: str):
@@ -270,44 +300,58 @@ class ECCToolsModule:
         """
         self.ecc.report_db(path)
 
-    def report_congestion(self, *args, **kwargs):
-        return self.ecc.report_congestion(*args, **kwargs)
+    def report_congestion(self, path: str = ""):
+        return self.ecc.report_congestion(path=path)
 
-    def report_dangling_net(self, *args, **kwargs):
-        return self.ecc.report_dangling_net(*args, **kwargs)
+    def report_dangling_net(self, path: str = ""):
+        return self.ecc.report_dangling_net(path=path)
 
-    def report_route(self, *args, **kwargs):
-        return self.ecc.report_route(*args, **kwargs)
+    def report_route(
+        self,
+        path: str = "",
+        net: str = "",
+        summary: bool = True,
+    ):
+        return self.ecc.report_route(path=path, net=net, summary=summary)
 
-    def report_place_distribution(self, *args, **kwargs):
-        return self.ecc.report_place_distribution(*args, **kwargs)
+    def report_place_distribution(self, prefixes: list[str] = []):
+        return self.ecc.report_place_distribution(prefixes=prefixes)
 
-    def report_prefixed_instance(self, *args, **kwargs):
-        return self.ecc.report_prefixed_instance(*args, **kwargs)
+    def report_prefixed_instance(
+        self,
+        prefix: str,
+        level: int = 1,
+        num_threshold: int = 1,
+    ):
+        return self.ecc.report_prefixed_instance(
+            prefix=prefix,
+            level=level,
+            num_threshold=num_threshold,
+        )
 
-    def report_drc(self, *args, **kwargs):
-        return self.ecc.report_drc(*args, **kwargs)
+    def report_drc(self, path: str):
+        return self.ecc.report_drc(path=path)
 
     ########################################################################
     # power api
     ########################################################################
-    def read_vcd_cpp(self, *args, **kwargs):
-        return self.ecc.read_vcd_cpp(*args, **kwargs)
+    def read_vcd_cpp(self, file_name: str, top_name: str):
+        return self.ecc.read_vcd_cpp(file_name=file_name, top_name=top_name)
 
-    def read_pg_spef(self, *args, **kwargs):
-        return self.ecc.read_pg_spef(*args, **kwargs)
+    def read_pg_spef(self, pg_spef_file: str):
+        return self.ecc.read_pg_spef(pg_spef_file=pg_spef_file)
 
-    def report_power_cpp(self, *args, **kwargs):
-        return self.ecc.report_power_cpp(*args, **kwargs)
+    def report_power_cpp(self):
+        return self.ecc.report_power_cpp()
 
-    def report_power(self, *args, **kwargs):
-        return self.ecc.report_power(*args, **kwargs)
+    def report_power(self):
+        return self.ecc.report_power()
 
-    def report_ir_drop(self, *args, **kwargs):
-        return self.ecc.report_ir_drop(*args, **kwargs)
+    def report_ir_drop(self, power_nets: list[str]):
+        return self.ecc.report_ir_drop(power_nets=power_nets)
 
-    def get_wire_timing_power_data(self, *args, **kwargs):
-        return self.ecc.get_wire_timing_power_data(*args, **kwargs)
+    def get_wire_timing_power_data(self, n_worst_path_per_clock: int):
+        return self.ecc.get_wire_timing_power_data(n_worst_path_per_clock)
         
     ########################################################################
     # CTS api
@@ -450,26 +494,82 @@ class ECCToolsModule:
             y_start=y_start, 
             y_step=y_step)
 
-    def place_port(self, *args, **kwargs):
-        return self.ecc.place_port(*args, **kwargs)
+    def place_port(
+        self,
+        pin_name: str,
+        offset_x: int,
+        offset_y: int,
+        width: int,
+        height: int,
+        layer: str,
+    ):
+        return self.ecc.place_port(
+            pin_name=pin_name,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            width=width,
+            height=height,
+            layer=layer,
+        )
 
-    def place_io_filler(self, *args, **kwargs):
-        return self.ecc.place_io_filler(*args, **kwargs)
+    def place_io_filler(
+        self,
+        filler_types: list[str],
+        prefix: str = "IOFill",
+    ):
+        return self.ecc.place_io_filler(
+            filler_types=filler_types,
+            prefix=prefix,
+        )
 
-    def add_placement_blockage(self, *args, **kwargs):
-        return self.ecc.add_placement_blockage(*args, **kwargs)
+    def add_placement_blockage(self, box: str):
+        return self.ecc.add_placement_blockage(box=box)
 
-    def add_placement_halo(self, *args, **kwargs):
-        return self.ecc.add_placement_halo(*args, **kwargs)
+    def add_placement_halo(self, inst_name: str, distance: str):
+        return self.ecc.add_placement_halo(
+            inst_name=inst_name,
+            distance=distance,
+        )
 
-    def add_routing_blockage(self, *args, **kwargs):
-        return self.ecc.add_routing_blockage(*args, **kwargs)
+    def add_routing_blockage(self, layer: str, box: str, exceptpgnet: bool):
+        return self.ecc.add_routing_blockage(
+            layer=layer,
+            box=box,
+            exceptpgnet=exceptpgnet,
+        )
 
-    def add_routing_halo(self, *args, **kwargs):
-        return self.ecc.add_routing_halo(*args, **kwargs)
+    def add_routing_halo(
+        self,
+        layer: str,
+        distance: str,
+        exceptpgnet: bool = False,
+        *,
+        inst_name: str,
+    ):
+        return self.ecc.add_routing_halo(
+            layer=layer,
+            distance=distance,
+            exceptpgnet=exceptpgnet,
+            inst_name=inst_name,
+        )
 
-    def place_instance(self, *args, **kwargs):
-        return self.ecc.place_instance(*args, **kwargs)
+    def place_instance(
+        self,
+        inst_name: str,
+        llx: int,
+        lly: int,
+        orient: str,
+        cellmaster: str,
+        source: str = "",
+    ):
+        return self.ecc.place_instance(
+            inst_name=inst_name,
+            llx=llx,
+            lly=lly,
+            orient=orient,
+            cellmaster=cellmaster,
+            source=source,
+        )
 
     ########################################################################
     # pdn api
@@ -494,8 +594,25 @@ class ECCToolsModule:
                                             instance_pin_name=instance_pin_name, 
                                             is_power=is_power)
 
-    def place_pdn_port(self, *args, **kwargs):
-        return self.ecc.place_pdn_port(*args, **kwargs)
+    def place_pdn_port(
+        self,
+        pin_name: str,
+        io_cell_name: str,
+        offset_x: int,
+        offset_y: int,
+        width: int,
+        height: int,
+        layer: str,
+    ):
+        return self.ecc.place_pdn_port(
+            pin_name=pin_name,
+            io_cell_name=io_cell_name,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            width=width,
+            height=height,
+            layer=layer,
+        )
 
     def create_pdn_grid(self,
                         layer : str,
@@ -527,20 +644,90 @@ class ECCToolsModule:
                            layers : list[str]):
         return self.ecc.connect_two_layer(layers=layers)
 
-    def connectMacroPdn(self, *args, **kwargs):
-        return self.ecc.connectMacroPdn(*args, **kwargs)
+    def connectMacroPdn(
+        self,
+        pin_layer: str,
+        pdn_layer: str,
+        power_pins: list[str],
+        ground_pins: list[str],
+        orient: str,
+    ):
+        return self.ecc.connectMacroPdn(
+            pin_layer=pin_layer,
+            pdn_layer=pdn_layer,
+            power_pins=power_pins,
+            ground_pins=ground_pins,
+            orient=orient,
+        )
 
-    def connectIoPinToPower(self, *args, **kwargs):
-        return self.ecc.connectIoPinToPower(*args, **kwargs)
+    def connectIoPinToPower(self, point_list: list[float], layer: str):
+        return self.ecc.connectIoPinToPower(
+            point_list=point_list,
+            layer=layer,
+        )
 
-    def connectPowerStripe(self, *args, **kwargs):
-        return self.ecc.connectPowerStripe(*args, **kwargs)
+    def connectPowerStripe(
+        self,
+        point_list: list[float],
+        net_name: str,
+        layer: str,
+        width: int = -1,
+    ):
+        return self.ecc.connectPowerStripe(
+            point_list=point_list,
+            net_name=net_name,
+            layer=layer,
+            width=width,
+        )
 
-    def add_segment_stripe(self, *args, **kwargs):
-        return self.ecc.add_segment_stripe(*args, **kwargs)
+    def add_segment_stripe(
+        self,
+        net_name: str = "",
+        point_list: list[float] = [],
+        layer: str = "",
+        width: int = 0,
+        point_begin: list[float] = [],
+        layer_start: str = "",
+        point_end: list[float] = [],
+        layer_end: str = "",
+        via_width: int = 0,
+        via_height: int = 0,
+    ):
+        return self.ecc.add_segment_stripe(
+            net_name=net_name,
+            point_list=point_list,
+            layer=layer,
+            width=width,
+            point_begin=point_begin,
+            layer_start=layer_start,
+            point_end=point_end,
+            layer_end=layer_end,
+            via_width=via_width,
+            via_height=via_height,
+        )
 
-    def add_segment_via(self, *args, **kwargs):
-        return self.ecc.add_segment_via(*args, **kwargs)
+    def add_segment_via(
+        self,
+        net_name: str,
+        layer: str = "",
+        top_layer: str = "",
+        bottom_layer: str = "",
+        *,
+        offset_x: int,
+        offset_y: int,
+        width: int,
+        height: int,
+    ):
+        return self.ecc.add_segment_via(
+            net_name=net_name,
+            layer=layer,
+            top_layer=top_layer,
+            bottom_layer=bottom_layer,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            width=width,
+            height=height,
+        )
 
     def auto_place_pins(self, 
                         layer: str, 
@@ -580,11 +767,11 @@ class ECCToolsModule:
     def run_placement(self, config: str):
         self.ecc.run_placer(config)
 
-    def init_pl(self, *args, **kwargs):
-        return self.ecc.init_pl(*args, **kwargs)
+    def init_pl(self, config: str):
+        return self.ecc.init_pl(config=config)
 
-    def destroy_pl(self, *args, **kwargs):
-        return self.ecc.destroy_pl(*args, **kwargs)
+    def destroy_pl(self):
+        return self.ecc.destroy_pl()
         
     def feature_placement_map(self, json_path: str, map_grid_size=1):
         """
@@ -592,8 +779,8 @@ class ECCToolsModule:
         """
         self.ecc.feature_pl_eval(json_path, map_grid_size)
 
-    def run_incremental_flow(self, *args, **kwargs):
-        return self.ecc.run_incremental_flow(*args, **kwargs)
+    def run_incremental_flow(self, config: str):
+        return self.ecc.run_incremental_flow(config=config)
 
     def run_legalize(self, config: str):
         self.ecc.run_incremental_lg()
@@ -625,17 +812,17 @@ class ECCToolsModule:
                                    onnx_path, 
                                    normalization_path)
 
-    def placer_run_mp(self, *args, **kwargs):
-        return self.ecc.placer_run_mp(*args, **kwargs)
+    def placer_run_mp(self):
+        return self.ecc.placer_run_mp()
 
-    def placer_run_gp(self, *args, **kwargs):
-        return self.ecc.placer_run_gp(*args, **kwargs)
+    def placer_run_gp(self):
+        return self.ecc.placer_run_gp()
 
-    def placer_run_lg(self, *args, **kwargs):
-        return self.ecc.placer_run_lg(*args, **kwargs)
+    def placer_run_lg(self):
+        return self.ecc.placer_run_lg()
 
-    def placer_run_dp(self, *args, **kwargs):
-        return self.ecc.placer_run_dp(*args, **kwargs)
+    def placer_run_dp(self):
+        return self.ecc.placer_run_dp()
         
     def feature_macro_drc_distribution(self, 
                                        path: str, 
@@ -649,8 +836,8 @@ class ECCToolsModule:
     ########################################################################
     # routing api
     ########################################################################
-    def run_ert(self, *args, **kwargs):
-        return self.ecc.run_ert(*args, **kwargs)
+    def run_ert(self, config: str = "", config_dict: dict[str, str] = {}):
+        return self.ecc.run_ert(config=config, config_dict=config_dict)
 
     def run_routing(self, config: str):
         self.ecc.init_rt(config=config)
@@ -849,8 +1036,8 @@ class ECCToolsModule:
     ########################################################################
     # timing opt api
     ########################################################################
-    def run_to(self, *args, **kwargs):
-        return self.ecc.run_to(*args, **kwargs)
+    def run_to(self, config: str):
+        return self.ecc.run_to(config=config)
 
     def run_timing_opt_drv(self, config: str):
         self.ecc.run_to_drv(config)
@@ -864,11 +1051,11 @@ class ECCToolsModule:
     ########################################################################
     # data vectorization
     ########################################################################
-    def layout_patchs(self, *args, **kwargs):
-        return self.ecc.layout_patchs(*args, **kwargs)
+    def layout_patchs(self, path: str):
+        return self.ecc.layout_patchs(path=path)
 
-    def layout_graph(self, *args, **kwargs):
-        return self.ecc.layout_graph(*args, **kwargs)
+    def layout_graph(self, path: str):
+        return self.ecc.layout_graph(path=path)
 
     def generate_vectors(self, 
                          vectors_dir : str,
@@ -898,71 +1085,136 @@ class ECCToolsModule:
     def vectors_nets_patterns_to_def(self, path):
         self.ecc.read_vectors_nets_patterns(path=path)
 
-    def get_timing_wire_graph(self, *args, **kwargs):
-        return self.ecc.get_timing_wire_graph(*args, **kwargs)
+    def get_timing_wire_graph(self, wire_graph_path: str):
+        return self.ecc.get_timing_wire_graph(wire_graph_path)
 
-    def get_timing_instance_graph(self, *args, **kwargs):
-        return self.ecc.get_timing_instance_graph(*args, **kwargs)
+    def get_timing_instance_graph(self, instance_graph_path: str):
+        return self.ecc.get_timing_instance_graph(instance_graph_path)
     
     ########################################################################
     # evaluation api
     ########################################################################
-    def total_wirelength_dict(self, *args, **kwargs):
-        return self.ecc.total_wirelength_dict(*args, **kwargs)
+    def total_wirelength_dict(self):
+        return self.ecc.total_wirelength_dict()
 
-    def cell_density(self, *args, **kwargs):
-        return self.ecc.cell_density(*args, **kwargs)
+    def cell_density(
+        self,
+        bin_cnt_x: int = 256,
+        bin_cnt_y: int = 256,
+        save_path: str = "",
+    ):
+        return self.ecc.cell_density(
+            bin_cnt_x=bin_cnt_x,
+            bin_cnt_y=bin_cnt_y,
+            save_path=save_path,
+        )
 
-    def pin_density(self, *args, **kwargs):
-        return self.ecc.pin_density(*args, **kwargs)
+    def pin_density(
+        self,
+        bin_cnt_x: int = 256,
+        bin_cnt_y: int = 256,
+        save_path: str = "",
+    ):
+        return self.ecc.pin_density(
+            bin_cnt_x=bin_cnt_x,
+            bin_cnt_y=bin_cnt_y,
+            save_path=save_path,
+        )
 
-    def net_density(self, *args, **kwargs):
-        return self.ecc.net_density(*args, **kwargs)
+    def net_density(
+        self,
+        bin_cnt_x: int = 256,
+        bin_cnt_y: int = 256,
+        save_path: str = "",
+    ):
+        return self.ecc.net_density(
+            bin_cnt_x=bin_cnt_x,
+            bin_cnt_y=bin_cnt_y,
+            save_path=save_path,
+        )
 
-    def rudy_congestion(self, *args, **kwargs):
-        return self.ecc.rudy_congestion(*args, **kwargs)
+    def rudy_congestion(
+        self,
+        bin_cnt_x: int = 256,
+        bin_cnt_y: int = 256,
+        save_path: str = "",
+    ):
+        return self.ecc.rudy_congestion(
+            bin_cnt_x=bin_cnt_x,
+            bin_cnt_y=bin_cnt_y,
+            save_path=save_path,
+        )
 
-    def lut_rudy_congestion(self, *args, **kwargs):
-        return self.ecc.lut_rudy_congestion(*args, **kwargs)
+    def lut_rudy_congestion(
+        self,
+        bin_cnt_x: int = 256,
+        bin_cnt_y: int = 256,
+        save_path: str = "",
+    ):
+        return self.ecc.lut_rudy_congestion(
+            bin_cnt_x=bin_cnt_x,
+            bin_cnt_y=bin_cnt_y,
+            save_path=save_path,
+        )
 
-    def egr_congestion(self, *args, **kwargs):
-        return self.ecc.egr_congestion(*args, **kwargs)
+    def egr_congestion(self, save_path: str = ""):
+        return self.ecc.egr_congestion(save_path=save_path)
 
-    def timing_power_hpwl(self, *args, **kwargs):
-        return self.ecc.timing_power_hpwl(*args, **kwargs)
+    def timing_power_hpwl(self):
+        return self.ecc.timing_power_hpwl()
 
-    def timing_power_stwl(self, *args, **kwargs):
-        return self.ecc.timing_power_stwl(*args, **kwargs)
+    def timing_power_stwl(self):
+        return self.ecc.timing_power_stwl()
 
-    def timing_power_egr(self, *args, **kwargs):
-        return self.ecc.timing_power_egr(*args, **kwargs)
+    def timing_power_egr(self):
+        return self.ecc.timing_power_egr()
 
-    def eval_macro_margin(self, *args, **kwargs):
-        return self.ecc.eval_macro_margin(*args, **kwargs)
+    def eval_macro_margin(self):
+        return self.ecc.eval_macro_margin()
 
-    def eval_continuous_white_space(self, *args, **kwargs):
-        return self.ecc.eval_continuous_white_space(*args, **kwargs)
+    def eval_continuous_white_space(self):
+        return self.ecc.eval_continuous_white_space()
 
-    def eval_macro_channel(self, *args, **kwargs):
-        return self.ecc.eval_macro_channel(*args, **kwargs)
+    def eval_macro_channel(self, die_size_ratio: float):
+        return self.ecc.eval_macro_channel(die_size_ratio=die_size_ratio)
 
-    def eval_cell_hierarchy(self, *args, **kwargs):
-        return self.ecc.eval_cell_hierarchy(*args, **kwargs)
+    def eval_cell_hierarchy(self, plot_path: str, level: int, forward: int):
+        return self.ecc.eval_cell_hierarchy(
+            plot_path=plot_path,
+            level=level,
+            forward=forward,
+        )
 
-    def eval_macro_hierarchy(self, *args, **kwargs):
-        return self.ecc.eval_macro_hierarchy(*args, **kwargs)
+    def eval_macro_hierarchy(self, plot_path: str, level: int, forward: int):
+        return self.ecc.eval_macro_hierarchy(
+            plot_path=plot_path,
+            level=level,
+            forward=forward,
+        )
 
-    def eval_macro_connection(self, *args, **kwargs):
-        return self.ecc.eval_macro_connection(*args, **kwargs)
+    def eval_macro_connection(self, plot_path: str, level: int, forward: int):
+        return self.ecc.eval_macro_connection(
+            plot_path=plot_path,
+            level=level,
+            forward=forward,
+        )
 
-    def eval_macro_pin_connection(self, *args, **kwargs):
-        return self.ecc.eval_macro_pin_connection(*args, **kwargs)
+    def eval_macro_pin_connection(self, plot_path: str, level: int, forward: int):
+        return self.ecc.eval_macro_pin_connection(
+            plot_path=plot_path,
+            level=level,
+            forward=forward,
+        )
 
-    def eval_macro_io_pin_connection(self, *args, **kwargs):
-        return self.ecc.eval_macro_io_pin_connection(*args, **kwargs)
+    def eval_macro_io_pin_connection(self, plot_path: str, level: int, forward: int):
+        return self.ecc.eval_macro_io_pin_connection(
+            plot_path=plot_path,
+            level=level,
+            forward=forward,
+        )
 
-    def eval_overflow(self, *args, **kwargs):
-        return self.ecc.eval_overflow(*args, **kwargs)
+    def eval_overflow(self):
+        return self.ecc.eval_overflow()
     
     ########################################################################
     # net optimization
@@ -970,11 +1222,49 @@ class ECCToolsModule:
     def run_net_opt(self, config : str):
         return self.ecc.run_no_fixfanout(config)
     
-    def build_rc_tree_from_flat_data(self, *args, **kwargs):
-        return self.ecc.build_rc_tree_from_flat_data(*args, **kwargs)
+    def build_rc_tree_from_flat_data(
+        self,
+        netName: str,
+        node_sta_names: list[str],
+        node_is_pin: list[bool],
+        steiner_indices: list[int],
+        parent_indices: list[int],
+        node_total_caps: list[float],
+        edge_resistances: list[float],
+        node_global_indices: list[int],
+    ):
+        return self.ecc.build_rc_tree_from_flat_data(
+            netName,
+            node_sta_names,
+            node_is_pin,
+            steiner_indices,
+            parent_indices,
+            node_total_caps,
+            edge_resistances,
+            node_global_indices,
+        )
 
-    def update_and_get_all_pin_timings(self, *args, **kwargs):
-        return self.ecc.update_and_get_all_pin_timings(*args, **kwargs)
+    def update_and_get_all_pin_timings(
+        self,
+        pin_names: list[str],
+        arrival_late_times,
+        arrival_early_times,
+        required_late_times,
+        required_early_times,
+        pin_net_delay,
+        cell_arc_delays,
+        net_timing_details,
+    ):
+        return self.ecc.update_and_get_all_pin_timings(
+            pin_names,
+            arrival_late_times,
+            arrival_early_times,
+            required_late_times,
+            required_early_times,
+            pin_net_delay,
+            cell_arc_delays,
+            net_timing_details,
+        )
     
     class RcxExtraction:        
         SAFE_TOKEN_RE = re.compile(r"^[^\s{}=#]+$")
