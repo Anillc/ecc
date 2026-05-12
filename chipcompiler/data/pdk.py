@@ -34,6 +34,8 @@ class PDK:
     tie_low_cell : str = ""
     tie_low_port : str = ""
     dont_use : list = field(default_factory=list) # don't use cell list
+    abc_driver_cell : str = "" # ABC driving cell
+    abc_load : float = 0.015 # ABC output load
 
     def validate(self) -> None:
         """Check that critical PDK paths exist. Raises ValueError if not."""
@@ -160,6 +162,8 @@ def PDK_ICS55(pdk_root: str = "") -> PDK:
         tie_high_port = "Z",
         tie_low_cell = "TIELOH7R",
         tie_low_port = "Z",
+        abc_driver_cell = "BUFX0P5H7R",
+        abc_load = 0.015,
         dont_use=[
             "DFFSRQX*",
             "DFFSRX*",
