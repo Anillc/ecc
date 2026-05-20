@@ -97,8 +97,6 @@ let
       tbb_2022
     ];
 
-    cmakeGenerator = "Ninja";
-
     cmakeFlags = [
       (lib.cmakeBool "BUILD_ECOS" true)
       (lib.cmakeBool "BUILD_PYTHON" true)
@@ -106,6 +104,7 @@ let
       (lib.cmakeBool "COMPATIBILITY_MODE" true)
       (lib.cmakeFeature "Python3_EXECUTABLE" python.interpreter)
       (lib.cmakeFeature "Python3_ROOT_DIR" "${python}")
+      "-GNinja"
     ];
 
     postPatch = installDeps;
@@ -131,7 +130,7 @@ let
       runHook postInstall
     '';
 
-    enableParallelBuild = false;
+    enableParallelBuilding = false;
   };
 in
 buildPythonPackage {
