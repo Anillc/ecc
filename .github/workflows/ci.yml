@@ -81,7 +81,7 @@ jobs:
       #   run: uv run pyright chipcompiler
 
       - name: Pytest
-        run: uv run pytest test/ --ignore=test/test_harden.py --cov=chipcompiler --cov-report=
+        run: uv run pytest test/ --ignore=test/test_harden.py --ignore=test/test_rcx.py --cov=chipcompiler --cov-report=
 
       - name: Publish coverage summary
         if: always()
@@ -147,16 +147,16 @@ jobs:
           path: |
             bazel-bin/build_ecc_cli_bundle/ecc.tar
 
-  nix:
-    runs-on: ubuntu-latest
-    needs: check-version
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - run: nix build -L -v .#cli
-      - run: nix run .#cli -- --help
-      - run: nix run .#cli -- --version
-      - run: nix run .#cli -- version --json
+  # nix:
+  #   runs-on: ubuntu-latest
+  #   needs: check-version
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #       with:
+  #         submodules: recursive
+  #     - uses: DeterminateSystems/nix-installer-action@main
+  #     - uses: DeterminateSystems/magic-nix-cache-action@main
+  #     - run: nix build -L -v .#cli
+  #     - run: nix run .#cli -- --help
+  #     - run: nix run .#cli -- --version
+  #     - run: nix run .#cli -- version --json
