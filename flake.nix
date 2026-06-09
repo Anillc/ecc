@@ -1,67 +1,98 @@
 {
-  nixConfig = {
-    extra-trusted-substituters = [
-      "https://serve.eminrepo.cc/"
-    ];
-    extra-trusted-public-keys = [ "serve.eminrepo.cc:fgdTGDMn75Z0NOvTmus/Z9Fyh6ExgoqddNVkaYVi5qk=" ];
-  };
+  inputs.self.submodules = true;
+  inputs.ecc-dreamplace.url = "./chipcompiler/thirdparty/ecc-dreamplace";
+  inputs.ecc-tools.url = "./chipcompiler/thirdparty/ecc-tools";
+  inputs.infra.url = "github:Emin017/ieda-infra";
+  outputs = inputs@{
+    self, nixpkgs, flake-parts, ecc-dreamplace, ecc-tools, infra,
+  }: let
+    chipcompiler = {
+      ecc-dreamplace,
+      ecc-tools,
+      yosysWithSlang,
+      lib,
+      makeWrapper,
+      python3Packages,
+    }: python3Packages.buildPythonPackage {
+      name = "chipcompiler";
+      format = "pyproject";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    parts.url = "github:hercules-ci/flake-parts";
-    treefmt-nix.url = "github:numtide/treefmt-nix";
-    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
-    infra.url = "github:Emin017/ieda-infra";
-  };
+      src = with lib.fileset; toSource {
+        root = ./.;
+        fileset = unions [
+          ./README.md
+          ./chipcompiler
+          ./pyproject.toml
+          ./uv.lock
+        ];
+      };
 
-  outputs =
-    inputs@{
-      nixpkgs,
-      parts,
-      treefmt-nix,
-      infra,
-      ...
-    }:
-    let
-      overlay = import ./nix/overlay.nix;
-      infraOverlay = inputs.infra.overlays.default;
-    in
-    parts.lib.mkFlake { inherit inputs; } {
-      imports = [
-        treefmt-nix.flakeModule
+      build-system = with python3Packages; [ uv-build ];
+
+      dependencies = with python3Packages; [
+        ecc-dreamplace
+        ecc-tools
+        fastapi
+        klayout
+        matplotlib
+        numpy
+        pandas
+        pydantic
+        pyjson5
+        pyyaml
+        scipy
+        torch
+        tqdm
+        typer
+        uvicorn
+        pip
       ];
-      systems = [
-        "x86_64-linux"
+
+      nativeBuildInputs = [ makeWrapper ];
+
+      postFixup = ''
+        wrapProgram "$out/bin/ecc" \
+          --set CHIPCOMPILER_OSS_CAD_DIR "${yosysWithSlang}" \
+          --prefix PATH : "${yosysWithSlang}/bin"
+      '';
+
+      pythonImportsCheck = [
+        "chipcompiler"
+        "chipcompiler.engine"
+        "chipcompiler.tools"
+        "chipcompiler.cli"
       ];
-      flake.overlays.default = overlay;
-      perSystem =
-        {
-          inputs',
-          self',
-          config,
-          pkgs,
-          system,
-          ...
-        }:
-        {
-          imports = [
-            ./nix
-          ];
-          _module.args.pkgs = import inputs.nixpkgs {
-            inherit system;
-            overlays = [
-              overlay
-              infraOverlay
-            ];
-          };
-          packages = {
-            inherit (pkgs)
-              chipcompiler
-              cli
-              ecc-tools-python
-              ecc-dreamplace-python
-              ;
-          };
-        };
     };
+  in flake-parts.lib.mkFlake { inherit inputs; } {
+    systems = [ "x86_64-linux" ];
+    perSystem = { self', pkgs, system, ... }: {
+      packages.default = pkgs.callPackage chipcompiler {
+        ecc-dreamplace = ecc-dreamplace.packages.${system}.default;
+        ecc-tools = ecc-tools.packages.${system}.default;
+        yosysWithSlang = infra.packages.${system}.yosysWithSlang;
+      };
+      devShells.default = pkgs.mkShell.override {
+        stdenv = pkgs.ccacheStdenv;
+      } {
+        NIX_LD = pkgs.lib.fileContents "${pkgs.stdenv.cc}/nix-support/dynamic-linker";
+        NIX_LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath (with pkgs; [
+          stdenv.cc.cc.lib
+          zlib
+          expat
+          cairo
+        ])}";
+        CHIPCOMPILER_OSS_CAD_DIR = "${infra.packages.${system}.yosysWithSlang}";
+        # inputsFrom will add python3.13 to the environment. Using rawBuildInputs and rawNativeBuildInputs to avoid that.
+        buildInputs = ecc-dreamplace.packages.${system}.default.rawBuildInputs ++
+          ecc-tools.packages.${system}.default.rawBuildInputs;
+        nativeBuildInputs = ecc-dreamplace.packages.${system}.default.rawNativeBuildInputs ++
+          ecc-tools.packages.${system}.default.rawNativeBuildInputs ++ (with pkgs; [
+            uv
+          ]);
+        shellHook = ''
+          export CCACHE_DIR="$PWD/.ccache"
+        '';
+      };
+    };
+  };
 }
