@@ -1,8 +1,17 @@
 {
-  inputs.self.submodules = true;
-  inputs.ecc-dreamplace.url = "./chipcompiler/thirdparty/ecc-dreamplace";
-  inputs.ecc-tools.url = "./chipcompiler/thirdparty/ecc-tools";
-  inputs.infra.url = "github:Emin017/ieda-infra";
+  inputs = {
+    self.submodules = true;
+    nixpkgs.url = "github:NixOS/nixpkgs/f4b140d5b253f5e2a1ff4e5506edbf8267724bde";
+    ecc-dreamplace = {
+      url = "./chipcompiler/thirdparty/ecc-dreamplace";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    ecc-tools = {
+      url = "./chipcompiler/thirdparty/ecc-tools";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    infra.url = "github:Emin017/ieda-infra";
+  };
   outputs = inputs@{
     self, nixpkgs, flake-parts, ecc-dreamplace, ecc-tools, infra,
   }: let
