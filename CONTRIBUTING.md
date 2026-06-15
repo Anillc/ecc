@@ -104,11 +104,9 @@ Keep dependency and version surfaces in sync:
 - `flake.nix` and `flake.lock` for Nix input changes.
 - Version metadata and release workflow inputs when changing release versions.
 
-ECC pins `ecc-tools` and `ecc-dreamplace` to exact Python wheel versions through
-`pyproject.toml` and GitHub Release wheel URLs. Changing a nested local checkout
-does not change the runtime package that `uv sync` installs. For dependency-level
-debugging, build or publish the local wheel first, update the dependency source
-or install input to that wheel, then reinstall/sync before testing.
+The root `pyproject.toml` pins `ecc-dreamplace` and `ecc-tools-bin` versions and maps both packages to local uv workspace sources for development. Use the full development sync command in [docs/development.md](docs/development.md) so those native workspace packages stay editable. CI/release installs pre-built wheels first, then syncs with `--no-install-package ecc-dreamplace` and `--no-install-package ecc-tools-bin` so uv does not replace the installed wheels.
+
+Changing a nested local checkout affects the development runtime after the editable sync; rebuild compiled artifacts when the change touches native outputs. For wheel or release validation, build/publish the matching wheel and keep the dependency pin aligned before testing.
 
 When a submodule bump suggests a dependency pin change, verify that the matching
 wheel or release artifact exists before updating parent dependency metadata.
@@ -125,7 +123,7 @@ Treat third-party repositories as separate projects:
 
 For source debugging of DreamPlace or ECC-Tools, follow the modes described in
 [docs/development.md](docs/development.md) and make clear in the PR whether the
-runtime used an installed wheel or a source-tree override.
+runtime used editable workspace sources or installed release wheels.
 
 ## Generated Files
 

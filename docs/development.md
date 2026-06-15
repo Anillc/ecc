@@ -338,13 +338,13 @@ def test_run_step():
 
 ## Integrating a Thirdparty Tool into the Build System
 
-ECC uses a dual-build strategy: **uv-managed Python deps** for dev, **Bazel** (+ Nix) for release. Reference `ecc-dreamplace` as a working example.
+ECC uses a dual-build strategy: **uv workspace-editable Python packages** for development, and **pre-built native wheels plus Bazel/Nix packaging** for CI/release. Reference `ecc-dreamplace` as a working example.
 
 **Principle**: Avoid modifying the thirdparty tool's own build system (CMakeLists, setup.py, etc.). Prefer solving build issues from the Bazel side or ECC's build configuration (cache entries, env vars, wrapper scripts).
 
 ### 1. Python deps
 
-Add the package to root `pyproject.toml`, choose either a local workspace source or a locked wheel URL under `[tool.uv.sources]`, then `uv lock`.
+Add the package to root `pyproject.toml`, include local workspace sources under `[tool.uv.workspace]` and `[tool.uv.sources]`, then `uv lock`. If the package requires special sync flags to remain editable or to force source builds, update the development sync command in [Installation](#installation) at the same time.
 
 ### 2. Dev build
 
