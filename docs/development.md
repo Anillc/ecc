@@ -12,8 +12,15 @@ If not using Nix, set up the full development environment with a single command:
 bazel run //:prepare_dev
 ```
 
-This runs two steps:
-1. `uv sync --frozen --all-groups --python 3.11` — creates the Python venv and installs the locked `ecc-dreamplace` and `ecc-tools` wheels
+This runs three steps:
+1. Creates/syncs the Python venv with editable workspace packages:
+   ```bash
+   uv sync --frozen --all-groups --python 3.11 \
+     --no-build-isolation-package ecc-dreamplace \
+     --no-binary-package ecc-tools-bin \
+     --verbose
+   ```
+   Keep the `ecc-dreamplace` and `ecc-tools-bin` flags; a plain `uv sync` can leave the native workspace packages non-editable.
 2. Builds and extracts the ECC runtime bundle → `chipcompiler/tools/ecc/bin/`
 3. Builds and installs DreamPlace operators (source build, dev only) → `chipcompiler/thirdparty/ecc-dreamplace/dreamplace/ops/`
 
@@ -25,7 +32,14 @@ bazel run //:prepare_dev --jobs=1
 ### Option 2: Nix Development Shell
 
 ```bash
-nix develop  # Provides Python 3.11+, uv, Yosys, ECC-Tools, dependencies
+nix develop  # Provides Python 3.11+, uv, Yosys, and native build deps
+
+# Inside the shell:
+uv sync --frozen --all-groups --python 3.11 \
+  --no-build-isolation-package ecc-dreamplace \
+  --no-binary-package ecc-tools-bin \
+  --verbose
+source .venv/bin/activate
 ```
 
 Auto-load with direnv:
@@ -34,7 +48,7 @@ echo "use flake" > .envrc
 direnv allow
 ```
 
-Shell hook runs `uv sync --frozen --all-groups --python 3.11` and activates venv. Binary cache at [serve.eminrepo.cc](https://serve.eminrepo.cc).
+The Nix shell provides toolchains and `uv`; it does not replace the project sync. Run the same `uv sync` command inside the shell. Binary cache at [serve.eminrepo.cc](https://serve.eminrepo.cc).
 
 ## Bazel Build System
 
@@ -54,7 +68,7 @@ git config --global url."https://ghfast.top/https://github.com/".insteadOf "http
 bazel build --config=ghproxy //...
 ```
 
-Python deps are managed via `uv.lock` — Bazel consumes it automatically through `uv_export`. To update: edit `pyproject.toml`, run `uv lock`.
+Python deps are managed via `uv.lock`; development sync uses the workspace sources in `[tool.uv.sources]`. To update: edit `pyproject.toml`, run `uv lock`, then rerun the dev `uv sync` command from [Installation](#installation).
 
 ## Release Builds
 
@@ -112,7 +126,7 @@ Requirements:
 - `auditwheel` (installed via dev deps)
 
 Common failures:
-- `auditwheel` missing: run `uv sync --frozen --all-groups --python 3.11`
+- `auditwheel` missing: run the dev `uv sync` command from [Installation](#installation)
 - `ecc_py*.so` missing after bundle extraction: build/install runtime (`bazel run //:prepare_dev`)
 - auditwheel policy mismatch (e.g. glibc symbols too new): rebuild on older compatible base or adjust target policy
 - missing runtime libraries: inspect `dist/wheel/reports/show.txt`
@@ -121,42 +135,42 @@ Common failures:
 
 DreamPlace has its own standalone build, CI/CD, and release pipeline.
 
-- **Default dev mode**: `uv sync --frozen --all-groups --python 3.11` installs the locked DreamPlace and ECC-Tools wheels into `.venv`.
-  `bazel run //:prepare_dev` still builds the source-tree operators so source debug mode can override imports when needed.
+- **Default dev mode**: run the root sync command from [Installation](#installation). It installs `ecc`, `ecc-dreamplace`, and `ecc-tools-bin` from the uv workspace as editable packages, so source edits in `chipcompiler/thirdparty/ecc-dreamplace` and `chipcompiler/thirdparty/ecc-tools` are reflected without reinstalling. Keep `--no-build-isolation-package ecc-dreamplace` and `--no-binary-package ecc-tools-bin`; without them the native packages can fall back to non-editable builds.
+  `bazel run //:prepare_dev` still builds the source-tree operators so source debug mode can use the compiled artifacts when needed.
 
-- **Release mode**: A pre-built wheel is downloaded from
-  [GitHub Releases](https://github.com/openecos-projects/ecc-dreamplace/releases).
-  The parent `Makefile` (`make build`) fetches it automatically via the
-  `_download_dreamplace_wheel` target. The CI workflow installs it directly:
+- **CI/release mode**: `.github/actions/setup-python-deps` downloads pre-built GitHub Release wheels for `ecc-dreamplace` and `ecc-tools-bin`, installs them with `uv pip install --no-deps`, then runs:
 
   ```bash
-  uv pip install --no-deps https://github.com/openecos-projects/ecc-dreamplace/releases/download/v0.1.0-alpha.1/ecc_dreamplace-0.1.0a1-py3-none-manylinux_2_34_x86_64.whl
+  uv sync --frozen --all-groups --python 3.11 --inexact \
+    --no-install-package ecc-dreamplace \
+    --no-install-package ecc-tools-bin
   ```
+
+  This keeps CI/release environments on the pre-installed wheels instead of replacing them with editable workspace builds.
 
 ### DreamPlace Debug Modes
 
 ECC currently uses two different DreamPlace modes during development:
 
-- **Default mode**: `ecc-dreamplace` is installed into `.venv` from a wheel. Runtime imports resolve to
-  `.venv/lib/python3.11/site-packages/dreamplace/`.
-- **Source debug mode**: Debugger startup prepends
+- **Default mode**: `ecc-dreamplace` is installed into `.venv` as an editable workspace package pointing at
+  `chipcompiler/thirdparty/ecc-dreamplace`.
+- **Forced source debug mode**: debugger startup prepends
   `chipcompiler/thirdparty/ecc-dreamplace` to `PYTHONPATH`, so `import dreamplace`
-  resolves to the submodule source tree instead.
+  resolves to the submodule source tree even if another install is present.
 
-Use the default mode for normal development and release-like validation. Use source
-debug mode when you need breakpoints and stepping to land in
-`chipcompiler/thirdparty/ecc-dreamplace/dreamplace/*.py`.
+Use the default mode for normal development and release-like source validation. Use forced source
+debug mode only when you need to make the import override explicit for debugger sessions.
 
 #### Default Mode
 
-- `uv sync --frozen --all-groups --python 3.11` keeps the runtime aligned with the locked wheel.
+- Use the dev `uv sync` command from [Installation](#installation); it keeps the runtime pointed at editable workspace packages.
 - LSP configuration such as `python.analysis.extraPaths` can improve source navigation, but it does not change runtime imports.
-- Python breakpoints land in the files that are actually imported at runtime, which are normally under `.venv/lib/python3.11/site-packages/dreamplace/`.
+- Python breakpoints land in `chipcompiler/thirdparty/ecc-dreamplace/dreamplace/*.py` because the editable install points at the workspace source.
 
-#### Source Debug Mode
+#### Forced Source Debug Mode
 
-This mode keeps the installed wheel untouched and only overrides module resolution for
-the debug session.
+This mode adds a `PYTHONPATH` override for the debug session. It is only needed
+when you want to force source-tree imports explicitly; it does not replace the editable `uv sync`.
 
 1. Build and install DreamPlace operators into the source tree:
 
@@ -191,8 +205,8 @@ the submodule source tree first.
 
 #### Behavior And Limits
 
-- Breakpoints in `chipcompiler/thirdparty/ecc-dreamplace/dreamplace/*.py` will hit in source debug mode.
-- Source edits only take effect in source debug mode. In default mode, runtime still uses the installed wheel copy.
+- Breakpoints in `chipcompiler/thirdparty/ecc-dreamplace/dreamplace/*.py` will hit after the default editable sync; forced source debug mode keeps that source path first on `PYTHONPATH`.
+- Python source edits take effect with the editable sync. Rebuild/reinstall DreamPlace operators when compiled `.so` artifacts change.
 - This override is aimed at Python code. It does not provide C++ or `.so` source-level debugging.
 - If source debug mode fails with missing DreamPlace operators, rerun `bazel run //bazel/scripts:install_dreamplace`.
 - If you only need editor navigation and not runtime overrides, prefer LSP-only configuration such as `python.analysis.extraPaths`.
