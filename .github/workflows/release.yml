@@ -11,6 +11,7 @@ on:
         default: 'v0.1.0-alpha.3'
 
 permissions:
+  actions: read
   contents: write
 
 jobs:
