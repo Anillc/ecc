@@ -54,6 +54,7 @@ jobs:
     name: Test
     needs: check-version
     runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_34_x86_64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -106,6 +107,7 @@ jobs:
     name: Build PyInstaller Bundle
     needs: check-version
     runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_34_x86_64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
