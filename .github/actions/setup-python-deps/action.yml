@@ -39,6 +39,10 @@ runs:
       if: ${{ inputs.build-all == 'true' }}
       uses: dtolnay/rust-toolchain@stable
 
+    - name: Setup sccache
+      if: ${{ inputs.build-all == 'true' }}
+      uses: mozilla-actions/sccache-action@v0.0.9
+
     - name: Install native tool wheels
       if: ${{ inputs.build-all != 'true' }}
       shell: bash
@@ -91,6 +95,8 @@ runs:
       shell: bash
       run: |
         if [ "${{ inputs.build-all }}" = "true" ]; then
+          export SCCACHE_GHA_ENABLED="true"
+          export CMAKE_ARGS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
           uv sync --frozen --all-groups --python 3.11 \
             --no-build-isolation-package ecc-dreamplace \
             --no-build-isolation-package ecc-tools-bin \
