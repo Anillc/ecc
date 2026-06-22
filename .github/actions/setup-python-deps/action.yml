@@ -3,7 +3,7 @@ description: Setup Python 3.11, uv, and install project dependencies.
 
 inputs:
   build-all:
-    description: Skip installing prebuilt native wheels and install all packages with uv sync.
+    description: Build native dependencies from source instead of downloading prebuilt native wheels.
     required: false
     default: "false"
 
@@ -20,6 +20,24 @@ runs:
       with:
         version: latest
         enable-cache: "true"
+
+    - name: Install native build dependencies
+      if: ${{ inputs.build-all == 'true' }}
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake ninja-build pkg-config patchelf mold lld \
+          libboost-all-dev libcairo2-dev libgflags-dev libgoogle-glog-dev \
+          flex libfl-dev bison libeigen3-dev libgtest-dev \
+          libtbb-dev libhwloc-dev libcurl4-openssl-dev libunwind-dev \
+          libmetis-dev libgmp-dev tcl-dev \
+          unzip zip
+
+    - name: Setup Rust
+      if: ${{ inputs.build-all == 'true' }}
+      uses: dtolnay/rust-toolchain@stable
 
     - name: Install native tool wheels
       if: ${{ inputs.build-all != 'true' }}
