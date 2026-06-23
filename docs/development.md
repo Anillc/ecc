@@ -21,7 +21,7 @@ after installing the required system packages for native builds.
 From the `ecc` repository root:
 
 ```bash
-uv sync --no-build-isolation-package ecc-dreamplace --no-binary-package ecc-tools-bin --verbose
+uv sync --no-build-isolation-package ecc-dreamplace --no-build-isolation-package ecc-tools-bin --verbose
 source .venv/bin/activate
 ```
 
