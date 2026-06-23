@@ -104,8 +104,13 @@ extend-include = ["*.spec"]
 [tool.pytest.ini_options]
 testpaths = ["test"]
 norecursedirs = [".venv"]
+markers = [
+  "integration: tests that run an ECC flow or large workspace orchestration",
+  "pdk: tests that require a complete external PDK installation",
+  "slow: tests that are expected to be expensive on a normal developer shell",
+]
 addopts = [
-  "--deselect=test/test_tools.py::test_sg13g2_gcd",
+  "--deselect=test/integration/test_rtl2gds_flow.py::test_sg13g2_gcd",
 ]
 
 [tool.ty]
